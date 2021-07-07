@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:servicenow="http://www.mulesoft.org/schema/mule/servicenow"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/servicenow http://www.mulesoft.org/schema/mule/servicenow/current/mule-servicenow.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="a26ac8d2-15db-4461-ba50-f0acc79ed7c0" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<servicenow:config name="ServiceNow_Config" doc:name="ServiceNow Config" doc:id="dcf739bf-4d8d-4df1-93eb-499fd72d6d7e" >
+		<servicenow:basic-connection username="admin" password="Qwert1234@" serviceAddress="https://dev62398.service-now.com" >
+			<servicenow:transport >
+				<servicenow:basic-auth-http-message-dispatcher-provider username="admin" password="Qwert1234@" />
+			</servicenow:transport>
+		</servicenow:basic-connection>
+	</servicenow:config>
+	<jms:config name="JMS_Config" doc:name="JMS Config" doc:id="6dba5f1b-b355-4082-9eb7-c5d14a08237c" >
+		<jms:active-mq-connection />
+	</jms:config>
+	<flow name="service-now-demoFlow" doc:id="22663911-0bb5-4501-9878-9d84268b00b5" >
+		<jms:listener doc:name="Listener" doc:id="0de3949a-8b67-4d86-a4db-8c58f7607fa2" config-ref="JMS_Config" destination="serviceNow">
+			<jms:consumer-type >
+				<jms:queue-consumer />
+			</jms:consumer-type>
+		</jms:listener>
+		<ee:transform doc:name="Transform Message" doc:id="7c84e1f3-a7cd-4152-a30b-2ed419d71e41" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.service-now.com/incident
+---
+{
+	ns0#insert: {
+		"assigned_to": payload.assignedTo,
+		"caller_id": payload.callerId,
+		"comments": payload.Comments,
+		"short_description": payload.shortDescription
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<servicenow:invoke doc:name="Invoke" doc:id="44071e06-cf66-4ae1-940c-4788ab405f3e" config-ref="ServiceNow_Config" service="incident" operation="insert"/>
+		<ee:transform doc:name="Transform Message" doc:id="41fe97ab-44be-402d-ba4d-370347db2f70" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="daaa2eac-7c03-49cc-9775-ad5bda6d785a" message="response received: #[payload]"/>
+	</flow>
+</mule>

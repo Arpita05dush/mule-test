@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="example" format="json">
+      <types:shape format="weave" example="examples/servicenow.json"><![CDATA[%dw 2.0
+
+type example = {|
+  short_description: String, 
+  comments: String, 
+  caller: String
+|} {"example": "{\\\"short_description\\\":\\\"Test incident creation\\\",\\\"comments\\\":\\\"These are my comments\\\",\\\"caller\\\":\\\"Arpita Sharma\\\"}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+</types:mule>
